@@ -3,7 +3,6 @@ import { ToolbarButton } from '@jupyterlab/apputils';
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 import { IDisposable, DisposableDelegate } from '@lumino/disposable';
 
-import { showUploadDialog } from '../dialog';
 import { settingsChanged, JupySQLSettings } from '../settings';
 
 /**
@@ -29,8 +28,21 @@ export class DeployingExtension
 
     private _onSettingsChanged = (sender: any, settings: JupySQLSettings) => {
         if (!settings.showDeployNotebook) {
-            this.deployNotebookButton.parent = null;
+            if (this.deployNotebookButton) {
+                this.deployNotebookButton.dispose();
+            }
         } else {
+            if (!this.deployNotebookButton) {
+                this.deployNotebookButton = new ToolbarButton({
+                    className: 'share-nb-button',
+                    label: '_',
+                    onClick: () => {},
+                    tooltip: 'placeholder',
+                });
+
+                this.deployNotebookButton.node.setAttribute("data-testid", "share-btn");
+            }
+
             this.panel.toolbar.insertItem(10, 'deployNB', this.deployNotebookButton);
         }
     }
@@ -41,25 +53,12 @@ export class DeployingExtension
         context: DocumentRegistry.IContext<INotebookModel>
     ): IDisposable {
 
-        const clickDeploy = () => {
-            showUploadDialog(panel, context)
-        }
-
         this.panel = panel;
 
-        this.deployNotebookButton = new ToolbarButton({
-            className: 'share-nb-button',
-            label: 'Share Notebook',
-            onClick: clickDeploy,
-            tooltip: 'Share notebook by uploading it to Ploomber Cloud',
-        });
-
-        this.deployNotebookButton.node.setAttribute("data-testid", "share-btn");
-
-        panel.toolbar.insertItem(10, 'deployNB', this.deployNotebookButton);
-
         return new DisposableDelegate(() => {
-            this.deployNotebookButton.dispose();
+            if (this.deployNotebookButton) {
+                this.deployNotebookButton.dispose();
+            }
         });
     }
 }
